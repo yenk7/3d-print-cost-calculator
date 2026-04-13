@@ -878,9 +878,9 @@
                 }
                 try {
                     const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(values)
+                        method: 'POST',
+                        body: JSON.stringify(values),
+                        redirect: 'follow'
                     });
                     if (!res.ok) throw new Error('Failed to save global settings');
                     alert('Global parameters saved for all users.');
