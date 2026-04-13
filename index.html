@@ -878,7 +878,7 @@
                 }
                 try {
                     const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, {
-                        method: GLOBAL_SETTINGS_SAVE_METHOD,
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(values)
                     });
