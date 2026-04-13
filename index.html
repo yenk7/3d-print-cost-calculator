@@ -734,6 +734,7 @@
                                 value="0.025" min="0" step="any" oninput="calc()">
                             <div class="hint">Default based on PLA Prusament pricing</div>
                         </div>
+                        <button class="login-btn" onclick="saveParams()" style="margin-top: 10px; width: 100%;">Save Parameters</button>
                     </div>
                 </div>
             </div>
@@ -810,7 +811,28 @@
                 if (u === 'Hopkins' && p === 'WSE2026') { isAuthed = true; document.getElementById('loginGate').classList.remove('show'); document.getElementById('sb').classList.add('show'); document.getElementById('lockIcon').innerHTML = '&#128275;'; document.getElementById('loginError').style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = '' }
                 else { document.getElementById('loginError').style.display = 'block' }
             }
-            function logout() { isAuthed = false; isOpen = false; document.getElementById('sb').classList.remove('show'); document.getElementById('lockIcon').innerHTML = '&#128274;'; document.getElementById('baseFee').value = 7; document.getElementById('rate').value = 0.01; document.getElementById('filCost').value = 0.025; calc() }
+            function loadParams() {
+                const savedBaseFee = localStorage.getItem('calc_baseFee');
+                document.getElementById('baseFee').value = savedBaseFee !== null ? savedBaseFee : 7;
+                const savedRate = localStorage.getItem('calc_rate');
+                document.getElementById('rate').value = savedRate !== null ? savedRate : 0.01;
+                const savedFilCost = localStorage.getItem('calc_filCost');
+                document.getElementById('filCost').value = savedFilCost !== null ? savedFilCost : 0.025;
+            }
+            function saveParams() {
+                localStorage.setItem('calc_baseFee', document.getElementById('baseFee').value);
+                localStorage.setItem('calc_rate', document.getElementById('rate').value);
+                localStorage.setItem('calc_filCost', document.getElementById('filCost').value);
+                alert('Parameters saved successfully!');
+            }
+            function logout() { 
+                isAuthed = false; 
+                isOpen = false; 
+                document.getElementById('sb').classList.remove('show'); 
+                document.getElementById('lockIcon').innerHTML = '&#128274;'; 
+                loadParams(); 
+                calc(); 
+            }
             function calc() {
                 const h = parseFloat(document.getElementById('hours').value) || 0;
                 const m = parseFloat(document.getElementById('mins').value) || 0;
@@ -825,6 +847,7 @@
                 document.getElementById('matCost').textContent = '$' + mc.toFixed(2);
                 document.getElementById('total').textContent = '$' + (tc + mc).toFixed(2);
             }
+            loadParams();
             calc();
         </script>
     </body>
