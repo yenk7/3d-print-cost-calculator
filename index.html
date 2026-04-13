@@ -810,27 +810,91 @@
                 if (u === 'Hopkins' && p === 'WSE2026') { isAuthed = true; document.getElementById('loginGate').classList.remove('show'); document.getElementById('sb').classList.add('show'); document.getElementById('lockIcon').innerHTML = '&#128275;'; document.getElementById('loginError').style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = '' }
                 else { document.getElementById('loginError').style.display = 'block' }
             }
-            function loadParams() {
-                const savedBaseFee = localStorage.getItem('calc_baseFee');
-                document.getElementById('baseFee').value = savedBaseFee !== null ? savedBaseFee : 7;
-                const savedRate = localStorage.getItem('calc_rate');
-                document.getElementById('rate').value = savedRate !== null ? savedRate : 0.01;
-                const savedFilCost = localStorage.getItem('calc_filCost');
-                document.getElementById('filCost').value = savedFilCost !== null ? savedFilCost : 0.025;
+            const GLOBAL_DEFAULTS = {
+                baseFee: 7,
+                rate: 0.05,
+                filCost: 0.025
+            };
+            // Set this to your global settings endpoint to share values across all users.
+            // Google Sheets option:
+            // 1) Create an Apps Script web app bound to a Sheet.
+            // 2) Deploy as web app and paste the URL below.
+            // 3) The web app should support GET (read) and POST (write JSON).
+            const GLOBAL_SETTINGS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyWJarqq3kFnittJGwITVy_uzKfMWPCrJoftxbHDyil9YOvq5VmV2Db7qvi9oVnbbqI/exec';
+            const GLOBAL_SETTINGS_SAVE_METHOD = 'POST';
+
+            function setFormValues(values) {
+                document.getElementById('baseFee').value = values.baseFee;
+                document.getElementById('rate').value = values.rate;
+                document.getElementById('filCost').value = values.filCost;
             }
-            function saveParams() {
-                localStorage.setItem('calc_baseFee', document.getElementById('baseFee').value);
-                localStorage.setItem('calc_rate', document.getElementById('rate').value);
-                localStorage.setItem('calc_filCost', document.getElementById('filCost').value);
-                alert('Parameters saved successfully!');
+
+            function getFormValues() {
+                return {
+                    baseFee: parseFloat(document.getElementById('baseFee').value) || 0,
+                    rate: parseFloat(document.getElementById('rate').value) || 0,
+                    filCost: parseFloat(document.getElementById('filCost').value) || 0
+                };
+            }
+
+            function loadLocalParams() {
+                const savedBaseFee = localStorage.getItem('calc_baseFee');
+                const savedRate = localStorage.getItem('calc_rate');
+                const savedFilCost = localStorage.getItem('calc_filCost');
+                setFormValues({
+                    baseFee: savedBaseFee !== null ? parseFloat(savedBaseFee) : GLOBAL_DEFAULTS.baseFee,
+                    rate: savedRate !== null ? parseFloat(savedRate) : GLOBAL_DEFAULTS.rate,
+                    filCost: savedFilCost !== null ? parseFloat(savedFilCost) : GLOBAL_DEFAULTS.filCost
+                });
+            }
+
+            async function loadParams() {
+                if (!GLOBAL_SETTINGS_ENDPOINT) {
+                    loadLocalParams();
+                    return;
+                }
+                try {
+                    const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, { cache: 'no-store' });
+                    if (!res.ok) throw new Error('Failed to load global settings');
+                    const payload = await res.json();
+                    setFormValues({
+                        baseFee: Number.isFinite(payload.baseFee) ? payload.baseFee : GLOBAL_DEFAULTS.baseFee,
+                        rate: Number.isFinite(payload.rate) ? payload.rate : GLOBAL_DEFAULTS.rate,
+                        filCost: Number.isFinite(payload.filCost) ? payload.filCost : GLOBAL_DEFAULTS.filCost
+                    });
+                } catch (e) {
+                    console.warn('Global settings unavailable, falling back to local settings.', e);
+                    loadLocalParams();
+                }
+            }
+            async function saveParams() {
+                const values = getFormValues();
+                if (!GLOBAL_SETTINGS_ENDPOINT) {
+                    localStorage.setItem('calc_baseFee', values.baseFee);
+                    localStorage.setItem('calc_rate', values.rate);
+                    localStorage.setItem('calc_filCost', values.filCost);
+                    alert('Parameters saved for this browser.');
+                    return;
+                }
+                try {
+                    const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, {
+                        method: GLOBAL_SETTINGS_SAVE_METHOD,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(values)
+                    });
+                    if (!res.ok) throw new Error('Failed to save global settings');
+                    alert('Global parameters saved for all users.');
+                } catch (e) {
+                    console.error('Could not save global settings.', e);
+                    alert('Could not save global settings. Check API endpoint/server and try again.');
+                }
             }
             function logout() { 
                 isAuthed = false; 
                 isOpen = false; 
                 document.getElementById('sb').classList.remove('show'); 
                 document.getElementById('lockIcon').innerHTML = '&#128274;'; 
-                loadParams(); 
-                calc(); 
+                loadParams().then(calc); 
             }
             function calc() {
                 const h = parseFloat(document.getElementById('hours').value) || 0;
@@ -851,8 +915,7 @@
                 document.getElementById('matCost').textContent = '$' + mc.toFixed(2);
                 document.getElementById('total').textContent = '$' + (tc + mc).toFixed(2);
             }
-            loadParams();
-            calc();
+            loadParams().then(calc);
         </script>
     </body>
 
