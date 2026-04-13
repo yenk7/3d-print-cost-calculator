@@ -800,14 +800,14 @@
         </div>
 
         <script>
-            let isOpen = false, isAuthed = false;
+            let isOpen = false, isAuthed = false, adminSessionPassword = '';
             function toggleSettings() {
                 if (!isAuthed) { isOpen = !isOpen; document.getElementById('loginGate').classList.toggle('show', isOpen); if (isOpen) document.getElementById('username').focus() }
                 else { document.getElementById('sb').classList.toggle('show') }
             }
             function attemptLogin() {
                 const u = document.getElementById('username').value.trim(), p = document.getElementById('password').value;
-                if (u === 'Hopkins' && p === 'WSE2026') { isAuthed = true; document.getElementById('loginGate').classList.remove('show'); document.getElementById('sb').classList.add('show'); document.getElementById('lockIcon').innerHTML = '&#128275;'; document.getElementById('loginError').style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = '' }
+                if (u === 'Hopkins' && p === 'WSE2026') { isAuthed = true; adminSessionPassword = p; document.getElementById('loginGate').classList.remove('show'); document.getElementById('sb').classList.add('show'); document.getElementById('lockIcon').innerHTML = '&#128275;'; document.getElementById('loginError').style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = '' }
                 else { document.getElementById('loginError').style.display = 'block' }
             }
             const GLOBAL_DEFAULTS = {
@@ -854,9 +854,10 @@
                     return;
                 }
                 try {
-                    const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, { cache: 'no-store' });
+                    const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, { cache: 'no-store', redirect: 'follow' });
                     if (!res.ok) throw new Error('Failed to load global settings');
-                    const payload = await res.json();
+                    const raw = await res.text();
+                    const payload = JSON.parse(raw);
                     setFormValues({
                         baseFee: Number.isFinite(payload.baseFee) ? payload.baseFee : GLOBAL_DEFAULTS.baseFee,
                         rate: Number.isFinite(payload.rate) ? payload.rate : GLOBAL_DEFAULTS.rate,
@@ -877,10 +878,12 @@
                     return;
                 }
                 try {
+                    const payload = { ...values, adminPassword: adminSessionPassword };
                     const res = await fetch(GLOBAL_SETTINGS_ENDPOINT, {
-                        method: 'PUT',
+                        method: GLOBAL_SETTINGS_SAVE_METHOD,
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(values)
+                        body: JSON.stringify(payload),
+                        redirect: 'follow'
                     });
                     if (!res.ok) throw new Error('Failed to save global settings');
                     alert('Global parameters saved for all users.');
@@ -891,6 +894,7 @@
             }
             function logout() { 
                 isAuthed = false; 
+                adminSessionPassword = '';
                 isOpen = false; 
                 document.getElementById('sb').classList.remove('show'); 
                 document.getElementById('lockIcon').innerHTML = '&#128274;'; 
