@@ -815,9 +815,13 @@
                 rate: 0.05,
                 filCost: 0.025
             };
-            // Set this to your server endpoint to enable global settings for all users.
-            // Example: https://your-domain.com/api/print-cost-settings
-            const GLOBAL_SETTINGS_ENDPOINT = '';
+            // Set this to your global settings endpoint to share values across all users.
+            // Google Sheets option:
+            // 1) Create an Apps Script web app bound to a Sheet.
+            // 2) Deploy as web app and paste the URL below.
+            // 3) The web app should support GET (read) and POST (write JSON).
+            const GLOBAL_SETTINGS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyWJarqq3kFnittJGwITVy_uzKfMWPCrJoftxbHDyil9YOvq5VmV2Db7qvi9oVnbbqI/exec';
+            const GLOBAL_SETTINGS_SAVE_METHOD = 'POST';
 
             function setFormValues(values) {
                 document.getElementById('baseFee').value = values.baseFee;
